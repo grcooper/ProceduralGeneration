@@ -143,7 +143,6 @@ public class MeshGenerator : MonoBehaviour
                 checkedVertices.Add(square.bottomLeft.vertexIndex);
                 break;
         }
-
     }
 
     void MeshFromPoints(params Node[] points)
@@ -340,7 +339,6 @@ public class MeshGenerator : MonoBehaviour
                     squares[x, y] = new Square(controlNodes[x, y + 1], controlNodes[x + 1, y + 1], controlNodes[x + 1, y], controlNodes[x, y]);
                 }
             }
-
         }
     }
 
@@ -372,7 +370,6 @@ public class MeshGenerator : MonoBehaviour
             if (bottomLeft.active)
                 configuration += 1;
         }
-
     }
 
     public class Node
@@ -398,6 +395,5 @@ public class MeshGenerator : MonoBehaviour
             above = new Node(position + Vector3.forward * squareSize / 2f);
             right = new Node(position + Vector3.right * squareSize / 2f);
         }
-
     }
 }
