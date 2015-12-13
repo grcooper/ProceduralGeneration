@@ -12,21 +12,48 @@ public class MapGenerator : MonoBehaviour
     public string seed;
     public bool useRandomSeed;
 
+    public int smoothIterations = 5;
+    public int borderSize = 1;
+
+    int wallThresholdSize = 50;
+    int roomThresholdSize = 50;
+
     [Range(0, 100)]
     public int randomFillPercent;
 
     int[,] map;
 
+    Vector3 startingPos;
+
+    enum TerrainType {  Floor, Walls };
+
     void Start()
     {
         GenerateMap();
+        SetPlayerPos(startingPos);
+        
     }
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(2))
         {
             GenerateMap();
+            SetPlayerPos(startingPos);
+        }
+    }
+
+    void SetPlayerPos( Vector3 pos )
+    {
+        Vector3 newPos = pos;
+        newPos.y = pos.y - MeshGenerator.wallHeight;
+        GameObject player = GameObject.Find("Player");
+        if (player)
+        {
+            if (pos != null)
+            {
+                player.transform.position = newPos;
+            }
         }
     }
 
@@ -35,14 +62,13 @@ public class MapGenerator : MonoBehaviour
         map = new int[width, height];
         RandomFillMap();
 
-        for (int i = 0; i < 5; i++)
+        for (int i = 0; i < smoothIterations; i++)
         {
             SmoothMap();
         }
 
         ProcessMap();
 
-        int borderSize = 1;
         int[,] borderedMap = new int[width + borderSize * 2, height + borderSize * 2];
 
         for (int x = 0; x < borderedMap.GetLength(0); x++)
@@ -55,7 +81,7 @@ public class MapGenerator : MonoBehaviour
                 }
                 else
                 {
-                    borderedMap[x, y] = 1;
+                    borderedMap[x, y] = (int)TerrainType.Walls;
                 }
             }
         }
@@ -66,8 +92,8 @@ public class MapGenerator : MonoBehaviour
 
     void ProcessMap()
     {
+        // Changing walls that do not meet the threshold limit into floors
         List<List<Coord>> wallRegions = GetRegions(1);
-        int wallThresholdSize = 50;
 
         foreach (List<Coord> wallRegion in wallRegions)
         {
@@ -75,13 +101,14 @@ public class MapGenerator : MonoBehaviour
             {
                 foreach (Coord tile in wallRegion)
                 {
-                    map[tile.tileX, tile.tileY] = 0;
+                    map[tile.tileX, tile.tileY] = (int)TerrainType.Floor;
                 }
             }
         }
 
+
+        // Changing rooms that do not meet the threshold limit into walls
         List<List<Coord>> roomRegions = GetRegions(0);
-        int roomThresholdSize = 50;
         List<Room> survivingRooms = new List<Room>();
 
         foreach (List<Coord> roomRegion in roomRegions)
@@ -90,11 +117,20 @@ public class MapGenerator : MonoBehaviour
             {
                 foreach (Coord tile in roomRegion)
                 {
-                    map[tile.tileX, tile.tileY] = 1;
+                    map[tile.tileX, tile.tileY] = (int)TerrainType.Walls;
                 }
             }
             else
             {
+                // Spawn the player in a room that is ok!
+                foreach( Coord tile in roomRegion)
+                {
+                    if (GetSurroundingWallCount(tile.tileX, tile.tileY) == 0 )
+                    {
+                        startingPos = CoordToWorldPoint(tile);
+                    }
+                }
+                // add to surviving rooms
                 survivingRooms.Add(new Room(roomRegion, map));
             }
         }

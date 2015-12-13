@@ -16,6 +16,8 @@ public class MeshGenerator : MonoBehaviour
     List<List<int>> outlines = new List<List<int>>();
     HashSet<int> checkedVertices = new HashSet<int>();
 
+    public static float wallHeight = 5;
+
     public void GenerateMesh(int[,] map, float squareSize)
     {
 
@@ -74,7 +76,7 @@ public class MeshGenerator : MonoBehaviour
         List<Vector3> wallVertices = new List<Vector3>();
         List<int> wallTriangles = new List<int>();
         Mesh wallMesh = new Mesh();
-        float wallHeight = 5;
+        
 
         foreach (List<int> outline in outlines)
         {
