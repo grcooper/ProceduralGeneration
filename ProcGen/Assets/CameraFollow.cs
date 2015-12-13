@@ -7,13 +7,11 @@ public class CameraFollow : MonoBehaviour
     {
         GameObject player = GameObject.Find("Player");
         transform.position = player.transform.position;
-        Debug.Log(transform.position);
     }
 
     void Update()
     {
         GameObject player = GameObject.Find("Player");
         transform.position = player.transform.position;
-        Debug.Log(transform.position);
     }
 }
