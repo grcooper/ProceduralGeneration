@@ -7,6 +7,7 @@ public class MeshGenerator : MonoBehaviour
 
     public SquareGrid squareGrid;
     public MeshFilter walls;
+    public MeshFilter cave;
 
     List<Vector3> vertices;
     List<int> triangles;
@@ -36,17 +37,37 @@ public class MeshGenerator : MonoBehaviour
         }
 
         Mesh mesh = new Mesh();
-        GetComponent<MeshFilter>().mesh = mesh;
+        cave.mesh = mesh;
 
         mesh.vertices = vertices.ToArray();
         mesh.triangles = triangles.ToArray();
         mesh.RecalculateNormals();
+
+        int tileAmount = 10;
+        Vector2[] uvs = new Vector2[vertices.Count];
+        for (int i = 0; i < vertices.Count; i++)
+        {
+            float percentX = Mathf.InverseLerp(-map.GetLength(0) / 2 * squareSize, map.GetLength(0) / 2 * squareSize, vertices[i].x) * tileAmount;
+            float percentY = Mathf.InverseLerp(-map.GetLength(0) / 2 * squareSize, map.GetLength(0) / 2 * squareSize, vertices[i].z) * tileAmount;
+            uvs[i] = new Vector2(percentX, percentY);
+        }
+        mesh.uv = uvs;
 
         CreateWallMesh();
     }
 
     void CreateWallMesh()
     {
+        // Destroy all previous mesh coliders
+        GameObject go_walls = GameObject.Find("Walls");
+        if( go_walls )
+        {
+            MeshCollider[] currentCollider = go_walls.gameObject.GetComponents<MeshCollider>();
+            for (int i = 0; i < currentCollider.Length; i++)
+            {
+                Destroy(currentCollider[i]);
+            }
+        }
 
         CalculateMeshOutlines();
 
@@ -77,6 +98,9 @@ public class MeshGenerator : MonoBehaviour
         wallMesh.vertices = wallVertices.ToArray();
         wallMesh.triangles = wallTriangles.ToArray();
         walls.mesh = wallMesh;
+
+        MeshCollider wallCollider = walls.gameObject.AddComponent<MeshCollider>();
+        wallCollider.sharedMesh = wallMesh;
     }
 
     void TriangulateSquare(Square square)
@@ -143,6 +167,7 @@ public class MeshGenerator : MonoBehaviour
                 checkedVertices.Add(square.bottomLeft.vertexIndex);
                 break;
         }
+
     }
 
     void MeshFromPoints(params Node[] points)
@@ -339,6 +364,7 @@ public class MeshGenerator : MonoBehaviour
                     squares[x, y] = new Square(controlNodes[x, y + 1], controlNodes[x + 1, y + 1], controlNodes[x + 1, y], controlNodes[x, y]);
                 }
             }
+
         }
     }
 
@@ -370,6 +396,7 @@ public class MeshGenerator : MonoBehaviour
             if (bottomLeft.active)
                 configuration += 1;
         }
+
     }
 
     public class Node
@@ -395,5 +422,6 @@ public class MeshGenerator : MonoBehaviour
             above = new Node(position + Vector3.forward * squareSize / 2f);
             right = new Node(position + Vector3.right * squareSize / 2f);
         }
+
     }
 }
