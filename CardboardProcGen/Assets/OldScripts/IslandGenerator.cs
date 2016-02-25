@@ -68,7 +68,7 @@ public class IslandGenerator : MonoBehaviour
     void Update()
     {
         // Make a new Island every time middle mouse is pressed
-        if (Input.GetMouseButtonDown(2))
+        if (Input.GetMouseButtonDown(0))
         {
             GenerateIsland();
             //OnDrawGizmos();
@@ -93,11 +93,12 @@ public class IslandGenerator : MonoBehaviour
             {
 				float xCoord = (float)(x);
 				float yCoord = (float)(y);
-                map[x, y] = new TerrainTile(TerrainType.Forest, x, y, Mathf.PerlinNoise(xCoord/perlinScale, yCoord/perlinScale) * hscale);
-				if (x % 10 == 0) {
-					Debug.Log ("X: " + xCoord / perlinScale + "Y: " + yCoord / perlinScale);
-					Debug.Log (map [x, y].getHeight ());
-				}
+				float perlinHeight = Mathf.PerlinNoise (xCoord / perlinScale, yCoord / perlinScale) * hscale;
+                map[x, y] = new TerrainTile(TerrainType.Forest, x, y, perlinHeight);
+				//if (x % 10 == 0) {
+					//Debug.Log ("X: " + xCoord / perlinScale + "Y: " + yCoord / perlinScale);
+					//Debug.Log (map [x, y].getHeight ());
+				//}
             }
         }
         //Debug.Log(map[0, 0] == null);
@@ -106,12 +107,21 @@ public class IslandGenerator : MonoBehaviour
         //CrawlingGeneration(TerrainType.Beach, 0, 0);
         //Debug.Log(map);
 
-        //RandomFillMap();
+		Debug.Log ("Random Fill");
+        RandomFillMap();
+		Debug.Log ("End Random Fill");
 
-        /*for (int i = 0; i < smoothIterations; i++)
+		Debug.Log (map);
+
+		Debug.Log ("Start Smooth");
+
+        for (int i = 0; i < smoothIterations; i++)
         {
             SmoothMap();
-        }*/
+        }
+		Debug.Log ("End Smooth");
+
+		Debug.Log (map);
 
         /*TerrainTile[,] borderedMap = new TerrainTile[width + borderSize * 2, height + borderSize * 2];
 
@@ -142,7 +152,11 @@ public class IslandGenerator : MonoBehaviour
         }
 
         int rand = psuedoRandom.Next(0, 100);
-        int h = 0;
+		/*float xCoord = (float)(x);
+		float yCoord = (float)(y);
+		float h = Mathf.PerlinNoise (xCoord / perlinScale, yCoord / perlinScale) * hscale;*/
+		int h = 0;
+
         if ( rand < repeatPercent)
         {
             map[indX, indY] = new TerrainTile(type, indX, indY, h);
@@ -194,8 +208,9 @@ public class IslandGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                // Generate Random Height (using 0 to start)
-                int h = 0;
+				float xCoord = (float)(x);
+				float yCoord = (float)(y);
+				float h = Mathf.PerlinNoise (xCoord / perlinScale, yCoord / perlinScale) * hscale;
                 int rand = psuedoRandom.Next(0, 100);
                 if (rand < beachPercent)
                 {
@@ -215,44 +230,18 @@ public class IslandGenerator : MonoBehaviour
 
     void SmoothMap()
     {
-        for (int x = 0; x < width; x++)
-        {
-            for (int y = 0; y < height; y++)
-            {
-                float neighboursBeach = GetSameTerrainNeighbours(TerrainType.Beach, x, y);
-                float neighboursStone = GetSameTerrainNeighbours(TerrainType.Stone, x, y);
-                float neighboursForest = GetSameTerrainNeighbours(TerrainType.Forest, x, y);
-                //Debug.Log("beachn: " + neighboursBeach);
-                //Debug.Log("Stonen: " + neighboursStone);
-                //Debug.Log("Forestn: " + neighboursForest);
-
-                float totalNeighbours = neighboursBeach + neighboursStone + neighboursForest;
-
-                //Get same terrain checks within 2 blocks of neighbours (24 max)
-                /*
-                *   O O O O O
-                *   O O O O O
-                *   O O X O O
-                *   O O O O O
-                *   O O O O O
-                */
-                if (neighboursForest > 4f)//(totalNeighbours * ((100 - forestPercent )  / 100f)))
-                {
-                    //Debug.Log("Forest");
-                    map[x, y].setType(TerrainType.Forest);
-                }
-                else if (neighboursBeach > 4f)//( totalNeighbours * ((100-beachPercent) / 100f )) )
-                {
-                    //Debug.Log("Beach");
-                    map[x, y].setType(TerrainType.Beach);
-                }
-                /*else if (neighboursStone > 2f)//(totalNeighbours * ((100-stonePercent) / 100f )) )
-                {
-                    //Debug.Log("Stone");
-                    map[x, y].setType(TerrainType.Stone);
-                }*/
-            }
-        }
+		for (int x = 0; x < width; x++)
+		{
+			for (int y = 0; y < height; y++)
+			{
+				int neighbourBeachTiles = GetSameTerrainNeighbours(TerrainType.Beach, x, y);
+				if (neighbourBeachTiles > 4) {
+					map [x, y] = new TerrainTile (TerrainType.Beach, x, y, map [x, y].getHeight ());
+				} else if (neighbourBeachTiles < 4) {
+					map [x, y] = new TerrainTile (TerrainType.Forest, x, y, map [x, y].getHeight ());
+				}
+			}
+		}
     }
 
     int GetSameTerrainNeighbours(TerrainType type, int posX, int posY)
@@ -280,7 +269,7 @@ public class IslandGenerator : MonoBehaviour
         {
             for (int y = startPosY; y <= endPosY; y++)
             {
-                if (posX != x && posY != y && map[x, y].getType() == type)
+				if (map[x, y].getType() == type)
                 {
                     count++;
                 }
