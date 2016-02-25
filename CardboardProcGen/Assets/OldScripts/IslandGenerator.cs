@@ -32,6 +32,9 @@ public class IslandGenerator : MonoBehaviour
     public int width;
     public int height;
 
+	public float perlinScale = 5f;
+	public float hscale;
+
     // Seed for generations
     public string seed;
     public bool useRandomSeed;
@@ -74,15 +77,12 @@ public class IslandGenerator : MonoBehaviour
 
     public void GenerateIsland()
     {
+		perlinScale = Mathf.Max (perlinScale, 0.0001f);
 
         if (useRandomSeed)
         {
             seed = Time.time.ToString();
         }
-
-        psuedoRandom = new System.Random(seed.GetHashCode());
-        int randx = psuedoRandom.Next(0, 10000);
-        int randy = randx;
 
         Debug.Log("Start Generate");
         map = new TerrainTile[width, height];
@@ -91,11 +91,13 @@ public class IslandGenerator : MonoBehaviour
         {
             for(int y = 0; y < height; y++)
             {
-                float hrand = psuedoRandom.Next(25, 75);
-                float xCoord = (float)(x + randx);
-                float yCoord = (float)(y + randy);
-                map[x, y] = new TerrainTile(TerrainType.Forest, x, y, Mathf.PerlinNoise(xCoord / (width + randx), yCoord/(randx + height)));
-                //if (x % 10 == 0) Debug.Log(map[x, y].getHeight());
+				float xCoord = (float)(x);
+				float yCoord = (float)(y);
+                map[x, y] = new TerrainTile(TerrainType.Forest, x, y, Mathf.PerlinNoise(xCoord/perlinScale, yCoord/perlinScale) * hscale);
+				if (x % 10 == 0) {
+					Debug.Log ("X: " + xCoord / perlinScale + "Y: " + yCoord / perlinScale);
+					Debug.Log (map [x, y].getHeight ());
+				}
             }
         }
         //Debug.Log(map[0, 0] == null);
