@@ -1,8 +1,9 @@
-﻿<Properties>
-  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="MonoDevelop.Default" />
-  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Fantasy Skybox FREE/Readme/Readme.txt">
+﻿<Properties StartupItem="Assembly-CSharp.csproj">
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" PreferredExecutionTarget="Unity.Instance.Unity Editor" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/OldScripts/IslandGenerator.cs">
     <Files>
-      <File FileName="Assets/Fantasy Skybox FREE/Readme/Readme.txt" Line="53" Column="2" />
+      <File FileName="Assets/OldScripts/IslandGenerator.cs" Line="51" Column="2" />
+      <File FileName="Assets/OldScripts/MapGenerator.cs" Line="427" Column="17" />
     </Files>
   </MonoDevelop.Ide.Workbench>
   <MonoDevelop.Ide.DebuggingService.Breakpoints>
