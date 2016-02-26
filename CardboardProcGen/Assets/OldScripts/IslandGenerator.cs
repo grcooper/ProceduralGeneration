@@ -4,6 +4,7 @@ using System.Collections;
 public class IslandGenerator : MonoBehaviour
 {
     public enum TerrainType { None, Beach, Forest, Stone };
+    public static TerrainType baseTerrainType = TerrainType.Beach;
 
     public class TerrainTile
     {
@@ -11,6 +12,7 @@ public class IslandGenerator : MonoBehaviour
         private int m_x;
         private int m_y;
         private float m_height;
+        private TerrainType m_baseType;
 
         public TerrainTile(TerrainType type, int x, int y, float h)
         {
@@ -18,10 +20,13 @@ public class IslandGenerator : MonoBehaviour
             m_x = x;
             m_y = y;
             m_height = h;
+            m_baseType = baseTerrainType;
         }
 
         public TerrainType getType() { return m_terrainType; }
-        public void setType(TerrainType type) { m_terrainType = type; }
+        public void setType( TerrainType type ) { m_terrainType = type;  }
+        public void setTypeAndBase(TerrainType type) { m_baseType = m_terrainType;  m_terrainType = type; } // May need to implement as basestack later
+        public TerrainType getBaseType() { return m_baseType; }
         public int getX() { return m_x; }
         public int getY() { return m_y; }
         public float getHeight() { return m_height; }
@@ -30,7 +35,7 @@ public class IslandGenerator : MonoBehaviour
     // Height and width of the island
     public int width;
     public int height;
-	public TerrainType baseTerrainType;
+	
 
 	public float perlinScale = 5f;
 	public float hscale;
@@ -47,7 +52,6 @@ public class IslandGenerator : MonoBehaviour
 
     // chance for each type of terrain, must add up to 100%, the forest terrain will default fill the rest if under 100
 	public float[] typePercents;
-    public float repeatPercent = 100f;
 
     TerrainTile[,] map;
 
@@ -74,6 +78,8 @@ public class IslandGenerator : MonoBehaviour
 
     public void GenerateIsland()
     {
+        // Scales the perlin noise
+        // No divisioon by 0 / negative values
 		perlinScale = Mathf.Max (perlinScale, 0.0001f);
 
         if (useRandomSeed)
@@ -101,6 +107,19 @@ public class IslandGenerator : MonoBehaviour
         }
 		Debug.Log ("End Smooth");
 
+        Debug.Log("Random Fill");
+        RandomFillMap(TerrainType.Stone);
+        Debug.Log("End Random Fill");
+
+
+        Debug.Log("Start Smooth");
+
+        for (int i = 0; i < smoothIterations; i++)
+        {
+            SmoothMap(TerrainType.Stone);
+        }
+        Debug.Log("End Smooth");
+
 
         /*TerrainTile[,] borderedMap = new TerrainTile[width + borderSize * 2, height + borderSize * 2];
 
@@ -123,6 +142,10 @@ public class IslandGenerator : MonoBehaviour
         Debug.Log("End Generate");
     }
 
+    /// <summary>
+    /// Sets the map's height values according to perlin noise generation in Unity
+    /// </summary>
+    /// <param name="defaultType"></param>
 	public void RandomHeightMap(TerrainType defaultType){
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
@@ -136,6 +159,10 @@ public class IslandGenerator : MonoBehaviour
 		}
 	}
 
+    /// <summary>
+    /// Randomly assigns values to be the toFill type based on global percentage of type
+    /// </summary>
+    /// <param name="toFill"></param>
 	public void RandomFillMap(TerrainType toFill)
     {
         if (useRandomSeed)
@@ -149,24 +176,40 @@ public class IslandGenerator : MonoBehaviour
 			for (int y = 0; y < height; y++){
 
                 int rand = psuedoRandom.Next(0, 100);
-                if (rand < beachPercent)
+                if (rand < typePercents[(int)toFill])
                 {
-					map [x, y].setType (toFill);
+					map [x, y].setTypeAndBase (toFill);
                 }
             }
         }
     }
 
+    /// <summary>
+    /// Smooths the map based on 
+    /// </summary>
+    /// <param name="toSmooth"></param>
     void SmoothMap(TerrainType toSmooth)
     {
 		for (int x = 0; x < width; x++)
 		{
 			for (int y = 0; y < height; y++)
 			{
-				int neighbourSmoothTiles = GetSameTerrainNeighbours(toSmooth, x, y);
+				int neighbourSmoothTiles = GetSameTerrainNeighbours(map[x,y].getType(), x, y);
 				if (neighbourSmoothTiles > 4) {
-					map [x, y].setType (toSmooth);
+					// Keep the same type
 				}
+                else 
+                {
+                    int baseNeighbourSmoothTiles = GetSameTerrainNeighbours(map[x,y].getBaseType(), x, y);
+                    if(baseNeighbourSmoothTiles > 4)
+                    {
+                        map[x, y].setType(map[x, y].getBaseType());
+                    }
+                    else
+                    {
+                        map[x, y].setType(toSmooth);
+                    }
+                }
 			}
 		}
     }
