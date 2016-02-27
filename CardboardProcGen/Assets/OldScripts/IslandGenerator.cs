@@ -1,8 +1,13 @@
 ﻿using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
 
 public class IslandGenerator : MonoBehaviour
 {
+    public MeshFilter beachMF;
+    public MeshFilter forestMF;
+    public MeshFilter stoneMF;
+
     public enum TerrainType { None, Beach, Forest, Stone };
     public static TerrainType baseTerrainType = TerrainType.Beach;
 
@@ -11,6 +16,7 @@ public class IslandGenerator : MonoBehaviour
         private TerrainType m_terrainType;
         private int m_x;
         private int m_y;
+        private int index;
         private float m_height;
         private TerrainType m_baseType;
 
@@ -30,6 +36,8 @@ public class IslandGenerator : MonoBehaviour
         public int getX() { return m_x; }
         public int getY() { return m_y; }
         public float getHeight() { return m_height; }
+        public int getIndex() { return index;  }
+        public void setIndex(int ind) { index = ind; }
     }
 
     // Height and width of the island
@@ -74,6 +82,12 @@ public class IslandGenerator : MonoBehaviour
             GenerateIsland();
             //OnDrawGizmos();
         }
+    }
+
+    Vector3 CoordToWorldPoint(int x, int y)
+    {
+        Vector3 pos = new Vector3(-width / 2 + x + .5f, map[x, y].getHeight(), -height / 2 + y + .5f);
+        return pos;
     }
 
     public void GenerateIsland()
@@ -139,6 +153,10 @@ public class IslandGenerator : MonoBehaviour
             }
         }
         map = borderedMap;*/
+
+        GenerateMesh();
+
+
         Debug.Log("End Generate");
     }
 
@@ -237,7 +255,126 @@ public class IslandGenerator : MonoBehaviour
         return count;
     }
 
-    void OnDrawGizmos()
+    void GenerateMesh()
+    {
+        List<Vector3> beachVertices = new List<Vector3>();
+        List<Vector3> forestVertices = new List<Vector3>();
+        List<Vector3> stoneVertices = new List<Vector3>();
+        List<int> beachTriangles = new List<int>();
+        List<int> forestTriangles = new List<int>();
+        List<int> stoneTriangles = new List<int>();
+
+        int beachIndex = 0;
+        int forestIndex = 0;
+        int stoneIndex = 0;
+        for(int x = 0; x < width; x++)
+        {
+            for(int y = 0; y < height; y++)
+            {
+                switch(map[x,y].getType())
+                {
+                    case TerrainType.Beach:
+                        beachVertices.Add(CoordToWorldPoint(x, y));
+                        map[x, y].setIndex(beachIndex);
+                        beachIndex++;
+                        break;
+                    case TerrainType.Forest:
+                        forestVertices.Add(CoordToWorldPoint(x, y));
+                        map[x, y].setIndex(forestIndex);
+                        forestIndex++;
+                        break;
+                    case TerrainType.Stone:
+                        stoneVertices.Add(CoordToWorldPoint(x, y));
+                        map[x, y].setIndex(stoneIndex);
+                        stoneIndex++;
+                        break;
+
+                }
+            }
+        }
+
+        for(int x = 0; x < width; x++)
+        {
+            for(int y = 0; y < height; y++)
+            {
+                if(x-1 >= 0 && y + 1 < height)
+                {
+                    switch (map[x, y].getType())
+                    {
+                        case TerrainType.Beach:
+                            beachTriangles.Add(map[x - 1, y + 1].getIndex());
+                            beachTriangles.Add(map[x, y + 1].getIndex());
+                            beachTriangles.Add(map[x, y].getIndex());
+                            break;
+                        case TerrainType.Forest:
+                            forestTriangles.Add(map[x - 1, y + 1].getIndex());
+                            forestTriangles.Add(map[x, y + 1].getIndex());
+                            forestTriangles.Add(map[x, y].getIndex());
+                            break;
+                        case TerrainType.Stone:
+                            stoneTriangles.Add(map[x - 1, y + 1].getIndex());
+                            stoneTriangles.Add(map[x, y + 1].getIndex());
+                            stoneTriangles.Add(map[x, y].getIndex());
+                            break;
+                    }
+                    
+                }
+                if(x+1 < width && y + 1 < height)
+                {
+                    switch (map[x, y].getType())
+                    {
+                        case TerrainType.Beach:
+                            beachTriangles.Add(map[x, y].getIndex());
+                            beachTriangles.Add(map[x, y + 1].getIndex());
+                            beachTriangles.Add(map[x + 1, y].getIndex());
+                            break;
+                        case TerrainType.Forest:
+                            forestTriangles.Add(map[x, y].getIndex());
+                            forestTriangles.Add(map[x, y + 1].getIndex());
+                            forestTriangles.Add(map[x + 1, y].getIndex());
+                            break;
+                        case TerrainType.Stone:
+                            stoneTriangles.Add(map[x, y].getIndex());
+                            stoneTriangles.Add(map[x, y + 1].getIndex());
+                            stoneTriangles.Add(map[x + 1, y].getIndex());
+                            break;
+                    }
+                }
+            }
+        }
+
+        Mesh beachMesh = new Mesh();
+        Mesh forestMesh = new Mesh();
+        Mesh stoneMesh = new Mesh();
+
+        beachMesh.vertices = beachVertices.ToArray();
+        beachMesh.triangles = beachTriangles.ToArray();
+        beachMesh.RecalculateNormals();
+        beachMF.mesh = beachMesh;
+
+        forestMesh.vertices = forestVertices.ToArray();
+        forestMesh.triangles = forestTriangles.ToArray();
+        forestMesh.RecalculateNormals();
+        forestMF.mesh = forestMesh;
+
+        stoneMesh.vertices = stoneVertices.ToArray();
+        stoneMesh.triangles = stoneTriangles.ToArray();
+        stoneMesh.RecalculateNormals();
+        stoneMF.mesh = stoneMesh;
+
+
+        MeshCollider beachWallCollider = beachMF.gameObject.AddComponent<MeshCollider>();
+        beachWallCollider.sharedMesh = beachMesh;
+
+        MeshCollider forestWallCollider = forestMF.gameObject.AddComponent<MeshCollider>();
+        forestWallCollider.sharedMesh = forestMesh;
+
+        MeshCollider stoneWallCollider = stoneMF.gameObject.AddComponent<MeshCollider>();
+        stoneWallCollider.sharedMesh = stoneMesh;
+
+    }
+
+    /*void OnDrawGizmos()
     {
         if (map != null)
         {
@@ -268,5 +405,5 @@ public class IslandGenerator : MonoBehaviour
                 }
             }
         }
-    }
+    }*/
 }

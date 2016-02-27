@@ -82,6 +82,7 @@
     <Compile Include="Assets\Fantasy Skybox FREE\Scripts\FSPlayer.cs" />
     <Compile Include="Assets\OldScripts\CameraFollow.cs" />
     <Compile Include="Assets\OldScripts\IslandGenerator.cs" />
+    <Compile Include="Assets\OldScripts\IslandMeshGenerator.cs" />
     <Compile Include="Assets\OldScripts\MapGenerator.cs" />
     <Compile Include="Assets\OldScripts\MeshGenerator.cs" />
     <Compile Include="Assets\OldScripts\Player.cs" />
@@ -94,6 +95,9 @@
     <None Include="Assets\Cardboard\Resources\UnlitTexture.shader" />
     <None Include="Assets\Fantasy Skybox FREE\Readme\Readme.txt" />
     <None Include="Assets\Plugins\Android\AndroidManifest.xml" />
+    <None Include="Assets\Shaders\UnityVC\StandardSpecularVC.shader" />
+    <None Include="Assets\Shaders\UnityVC\StandardVC.shader" />
+    <None Include="Assets\Shaders\UnityVC\UnityVC.cginc" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>
