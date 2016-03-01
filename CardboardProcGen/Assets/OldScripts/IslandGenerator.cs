@@ -34,6 +34,7 @@ public class IslandGenerator : MonoBehaviour
         public int getX() { return m_x; }
         public int getY() { return m_y; }
         public float getHeight() { return m_height; }
+        public void setHeight( float h ) { m_height = h; }
         public int getIndex() { return index;  }
         public void setIndex(int ind) { index = ind; }
     }
@@ -84,7 +85,7 @@ public class IslandGenerator : MonoBehaviour
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
-        Vector3 pos = new Vector3(-width / 2 + (x * 16) + .5f, map[x, y].getHeight(), -height / 2 + (y * 16) + .5f);
+        Vector3 pos = new Vector3(-width / 2 + (x * 64) + .5f, map[x, y].getHeight(), -height / 2 + (y * 64) + .5f);
         return pos;
     }
 
@@ -98,6 +99,7 @@ public class IslandGenerator : MonoBehaviour
         {
             seed = Time.time.ToString();
         }
+        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
 
         Debug.Log("Start Generate");
         map = new TerrainTile[width, height];
@@ -132,6 +134,7 @@ public class IslandGenerator : MonoBehaviour
         }
         Debug.Log("End Smooth");
 
+        // Post processing beach and stone height sharpening
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -143,8 +146,24 @@ public class IslandGenerator : MonoBehaviour
                 {
                     if (map[x, y].getType() == TerrainType.Forest)
                     {
-                        map[x, y].setType(TerrainType.Beach);
+                        float newRand = (float)psuedoRandom.Next(0, 4) * (Mathf.Min(height - y, y, width - x, x) / (float)borderSize);
+
+                        if (newRand <= 2)
+                        {
+                            map[x, y].setType(TerrainType.Beach);
+                        }
                     }
+                }
+
+                if(map[x,y].getType() == TerrainType.Stone)
+                {
+                    float newHScale = (((float)psuedoRandom.Next(90, 120))/100f);
+
+                    map[x, y].setHeight(map[x, y].getHeight() * newHScale);
+                }
+                else
+                {
+                    map[x, y].setHeight(map[x, y].getHeight() * 0.7f);
                 }
             }
         }
