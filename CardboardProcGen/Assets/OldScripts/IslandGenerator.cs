@@ -4,9 +4,7 @@ using System.Collections.Generic;
 
 public class IslandGenerator : MonoBehaviour
 {
-    public MeshFilter beachMF;
-    public MeshFilter forestMF;
-    public MeshFilter stoneMF;
+    public MeshFilter landMF;
 
     public enum TerrainType { None, Beach, Forest, Stone };
     public static TerrainType baseTerrainType = TerrainType.Beach;
@@ -86,7 +84,7 @@ public class IslandGenerator : MonoBehaviour
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
-        Vector3 pos = new Vector3(-width / 2 + x + .5f, map[x, y].getHeight(), -height / 2 + y + .5f);
+        Vector3 pos = new Vector3(-width / 2 + (x * 16) + .5f, map[x, y].getHeight(), -height / 2 + (y * 16) + .5f);
         return pos;
     }
 
@@ -134,25 +132,22 @@ public class IslandGenerator : MonoBehaviour
         }
         Debug.Log("End Smooth");
 
-
-        /*TerrainTile[,] borderedMap = new TerrainTile[width + borderSize * 2, height + borderSize * 2];
-
-        for (int x = 0; x < borderedMap.GetLength(0); x++)
+        for (int x = 0; x < width; x++)
         {
-            for (int y = 0; y < borderedMap.GetLength(1); y++)
+            for (int y = 0; y < height; y++)
             {
-                int h = 0;
-                if (x >= borderSize && x < width + borderSize && y >= borderSize && y < height + borderSize)
+                if (x >= borderSize && x < width - borderSize && y >= borderSize && y < height - borderSize)
                 {
-                    borderedMap[x, y] = map[x - borderSize, y - borderSize];
                 }
                 else
                 {
-                    borderedMap[x, y] = new TerrainTile(TerrainType.Beach, x, y, h);
+                    if (map[x, y].getType() == TerrainType.Forest)
+                    {
+                        map[x, y].setType(TerrainType.Beach);
+                    }
                 }
             }
         }
-        map = borderedMap;*/
 
         GenerateMesh();
 
@@ -167,11 +162,17 @@ public class IslandGenerator : MonoBehaviour
 	public void RandomHeightMap(TerrainType defaultType){
 		for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
-				
-				float xCoord = (float)(x);
+                float xCoord = (float)(x);
 				float yCoord = (float)(y);
-				float h = Mathf.PerlinNoise (xCoord / perlinScale, yCoord / perlinScale) * hscale;
-
+                float h = Mathf.PerlinNoise(xCoord / perlinScale, yCoord / perlinScale);
+                if (x >= borderSize && x < width - borderSize && y >= borderSize && y < height - borderSize)
+                {
+                    h = h * hscale;
+                }
+                else
+                {
+                    h = h * ((Mathf.Min(height - y, y, width - x, x)/(float)borderSize) * hscale);
+                }
 				map[x, y] = new TerrainTile(defaultType, x, y, h);
 			}
 		}
@@ -257,39 +258,62 @@ public class IslandGenerator : MonoBehaviour
 
     void GenerateMesh()
     {
-        List<Vector3> beachVertices = new List<Vector3>();
-        List<Vector3> forestVertices = new List<Vector3>();
-        List<Vector3> stoneVertices = new List<Vector3>();
-        List<int> beachTriangles = new List<int>();
-        List<int> forestTriangles = new List<int>();
-        List<int> stoneTriangles = new List<int>();
+        List<Vector3> vertices = new List<Vector3>();
+        List<int> triangles = new List<int>();
+        List < Color > colors = new List<Color>();
 
-        int beachIndex = 0;
-        int forestIndex = 0;
-        int stoneIndex = 0;
+        const int NUMSANDCOLORS = 4;
+        List<Color> sandColors = new List<Color>();
+        sandColors.Add(new Color(194f/255f, 178f/255f, 128f/255f));
+        sandColors.Add(new Color(193f/255f, 154f/255f, 107f/255f));
+        sandColors.Add(new Color(150f/255f, 113f/255f, 23f/255f));
+        sandColors.Add(new Color(225f/255f, 169f/255f, 95f/255f));
+
+        const int NUMFORESTCOLORS = 4;
+        List<Color> forestColors = new List<Color>();
+        forestColors.Add(new Color(86f/255f, 130f/255f, 3f/255f));
+        forestColors.Add(new Color(138f/255f, 154f/255f, 91f/255f));
+        forestColors.Add(new Color(141f/255f, 182f/255f, 0f/255f));
+        forestColors.Add(new Color(154f/255f, 205f/255f, 50f/255f));
+
+        const int NUMSTONECOLORS = 4;
+        List<Color> stoneColors = new List<Color>();
+        stoneColors.Add(new Color(160f/255f, 160f/255f, 160f/255f));
+        stoneColors.Add(new Color(130f/255f, 130f/255f, 130f/255f));
+        stoneColors.Add(new Color(100f/255f, 100f/255f, 100f/255f));
+        stoneColors.Add(new Color(70f/255f, 70f/255f, 70f/255f));
+
+
+        if (useRandomSeed)
+        {
+            seed = Time.time.ToString();
+        }
+
+        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
+
+        int index = 0;
         for(int x = 0; x < width; x++)
         {
-            for(int y = 0; y < height; y++)
+            for (int y = 0; y < height; y++)
             {
-                switch(map[x,y].getType())
+                vertices.Add(CoordToWorldPoint(x, y));
+                map[x, y].setIndex(index);
+                index++;
+                Color pointColor = new Color();
+                int rand = psuedoRandom.Next(0, 3);
+                switch (map[x, y].getType())
                 {
                     case TerrainType.Beach:
-                        beachVertices.Add(CoordToWorldPoint(x, y));
-                        map[x, y].setIndex(beachIndex);
-                        beachIndex++;
+                        pointColor = sandColors[rand];
                         break;
                     case TerrainType.Forest:
-                        forestVertices.Add(CoordToWorldPoint(x, y));
-                        map[x, y].setIndex(forestIndex);
-                        forestIndex++;
+                        pointColor = forestColors[rand];
                         break;
                     case TerrainType.Stone:
-                        stoneVertices.Add(CoordToWorldPoint(x, y));
-                        map[x, y].setIndex(stoneIndex);
-                        stoneIndex++;
+                        pointColor = stoneColors[rand];
                         break;
-
                 }
+                colors.Add(pointColor);
             }
         }
 
@@ -299,111 +323,51 @@ public class IslandGenerator : MonoBehaviour
             {
                 if(x-1 >= 0 && y + 1 < height)
                 {
-                    switch (map[x, y].getType())
-                    {
-                        case TerrainType.Beach:
-                            beachTriangles.Add(map[x - 1, y + 1].getIndex());
-                            beachTriangles.Add(map[x, y + 1].getIndex());
-                            beachTriangles.Add(map[x, y].getIndex());
-                            break;
-                        case TerrainType.Forest:
-                            forestTriangles.Add(map[x - 1, y + 1].getIndex());
-                            forestTriangles.Add(map[x, y + 1].getIndex());
-                            forestTriangles.Add(map[x, y].getIndex());
-                            break;
-                        case TerrainType.Stone:
-                            stoneTriangles.Add(map[x - 1, y + 1].getIndex());
-                            stoneTriangles.Add(map[x, y + 1].getIndex());
-                            stoneTriangles.Add(map[x, y].getIndex());
-                            break;
-                    }
+                    triangles.Add(map[x - 1, y + 1].getIndex());
+                    triangles.Add(map[x, y + 1].getIndex());
+                    triangles.Add(map[x, y].getIndex());
                     
                 }
                 if(x+1 < width && y + 1 < height)
                 {
-                    switch (map[x, y].getType())
-                    {
-                        case TerrainType.Beach:
-                            beachTriangles.Add(map[x, y].getIndex());
-                            beachTriangles.Add(map[x, y + 1].getIndex());
-                            beachTriangles.Add(map[x + 1, y].getIndex());
-                            break;
-                        case TerrainType.Forest:
-                            forestTriangles.Add(map[x, y].getIndex());
-                            forestTriangles.Add(map[x, y + 1].getIndex());
-                            forestTriangles.Add(map[x + 1, y].getIndex());
-                            break;
-                        case TerrainType.Stone:
-                            stoneTriangles.Add(map[x, y].getIndex());
-                            stoneTriangles.Add(map[x, y + 1].getIndex());
-                            stoneTriangles.Add(map[x + 1, y].getIndex());
-                            break;
-                    }
+                     triangles.Add(map[x, y].getIndex());
+                     triangles.Add(map[x, y + 1].getIndex());
+                     triangles.Add(map[x + 1, y].getIndex());
                 }
             }
         }
 
-        Mesh beachMesh = new Mesh();
-        Mesh forestMesh = new Mesh();
-        Mesh stoneMesh = new Mesh();
+        Vector3[] verticesModified = new Vector3[triangles.Count];
+        int[] trianglesModified = new int[triangles.Count];
+        Color[] colorsModified = new Color[triangles.Count];
+        Color currentColor = new Color();
+        for (int i = 0; i < trianglesModified.Length; i++)
+        {
+            //make every vertex unique
+            verticesModified[i] = vertices[triangles[i]];
+            trianglesModified[i] = i;
+            // Assign a color coming from colors array
+            if(i % 3 == 0)
+            {
+                currentColor = colors[triangles[i]];
+            }
+            colorsModified[i] = currentColor;
+        }
 
-        beachMesh.vertices = beachVertices.ToArray();
-        beachMesh.triangles = beachTriangles.ToArray();
-        beachMesh.RecalculateNormals();
-        beachMF.mesh = beachMesh;
+        Mesh mesh = new Mesh();
 
-        forestMesh.vertices = forestVertices.ToArray();
-        forestMesh.triangles = forestTriangles.ToArray();
-        forestMesh.RecalculateNormals();
-        forestMF.mesh = forestMesh;
+        mesh.vertices = verticesModified;
+        mesh.triangles = trianglesModified;
+        mesh.colors = colorsModified;
+        mesh.RecalculateNormals();
+        landMF.mesh = mesh;
 
-        stoneMesh.vertices = stoneVertices.ToArray();
-        stoneMesh.triangles = stoneTriangles.ToArray();
-        stoneMesh.RecalculateNormals();
-        stoneMF.mesh = stoneMesh;
-
-
-        MeshCollider beachWallCollider = beachMF.gameObject.AddComponent<MeshCollider>();
-        beachWallCollider.sharedMesh = beachMesh;
-
-        MeshCollider forestWallCollider = forestMF.gameObject.AddComponent<MeshCollider>();
-        forestWallCollider.sharedMesh = forestMesh;
-
-        MeshCollider stoneWallCollider = stoneMF.gameObject.AddComponent<MeshCollider>();
-        stoneWallCollider.sharedMesh = stoneMesh;
+        if ( landMF.gameObject.GetComponent<MeshCollider>() != null)
+        {
+            Destroy(landMF.gameObject.GetComponent<MeshCollider>());
+        }
+        MeshCollider wallCollider = landMF.gameObject.AddComponent<MeshCollider>();
+        wallCollider.sharedMesh = mesh;
 
     }
-
-    /*void OnDrawGizmos()
-    {
-        if (map != null)
-        {
-            for (int x = 0; x < width; x++)
-            {
-                for (int y = 0; y < height; y++)
-                {
-                    switch (map[x, y].getType())
-                    {
-                        case TerrainType.Beach:
-                            Gizmos.color = Color.yellow;
-                            break;
-                        case TerrainType.Stone:
-                            Gizmos.color = Color.grey;
-                            break;
-                        case TerrainType.Forest:
-                            Gizmos.color = Color.green;
-                            break;
-                        default:
-                            Gizmos.color = Color.white;
-                            break;
-
-                    }
-
-                    Vector3 pos = new Vector3(-width / 2 + x + .5f, map[x,y].getHeight() , -height / 2 + y + .5f);
-                    
-                    Gizmos.DrawCube(pos, Vector3.one);
-                }
-            }
-        }
-    }*/
 }
