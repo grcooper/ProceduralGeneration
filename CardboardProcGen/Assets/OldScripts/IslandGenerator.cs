@@ -64,6 +64,10 @@ public class IslandGenerator : MonoBehaviour
 
     Vector3 startingPos;
 
+    private float waterH;
+    private int xPlayerStart;
+    private int yPlayerStart;
+
     private System.Random psuedoRandom;
 
     // Use this for initialization
@@ -85,7 +89,7 @@ public class IslandGenerator : MonoBehaviour
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
-        Vector3 pos = new Vector3(-width / 2 + (x * 64) + .5f, map[x, y].getHeight(), -height / 2 + (y * 64) + .5f);
+        Vector3 pos = new Vector3(-width / 2 + (x * 32) + .5f, map[x, y].getHeight(), -height / 2 + (y * 32) + .5f);
         return pos;
     }
 
@@ -101,6 +105,8 @@ public class IslandGenerator : MonoBehaviour
         }
         System.Random psuedoRandom = new System.Random(seed.GetHashCode());
 
+        
+
         Debug.Log("Start Generate");
         map = new TerrainTile[width, height];
 
@@ -108,7 +114,10 @@ public class IslandGenerator : MonoBehaviour
 		RandomHeightMap(baseTerrainType);
 		Debug.Log("End Random Heightmap");
 
-		Debug.Log ("Random Fill");
+        waterH = ((float)psuedoRandom.Next(0, (int)hscale) * 0.2f) + 0.1f;
+        MovePlane(waterH);
+
+        Debug.Log ("Random Fill");
 		RandomFillMap(TerrainType.Forest);
 		Debug.Log ("End Random Fill");
 
@@ -139,7 +148,10 @@ public class IslandGenerator : MonoBehaviour
         {
             for (int y = 0; y < height; y++)
             {
-                if (x >= borderSize && x < width - borderSize && y >= borderSize && y < height - borderSize)
+                float distToPoint = Vector3.Distance(new Vector3(x,y,0), new Vector3(width/2,height/2,0));
+                float distToCorner = Vector3.Distance(new Vector3(width/2,height/2,0), new Vector3(0,0,0));
+
+                if (width/2 > distToPoint + borderSize)
                 {
                 }
                 else
@@ -169,9 +181,48 @@ public class IslandGenerator : MonoBehaviour
         }
 
         GenerateMesh();
-
+        bool foundStart = false;
+        for(int x = 0; x < width && !foundStart; x++)
+        {
+            for(int y = 0; y < height && !foundStart; y++)
+            {
+                if (map[x,y].getHeight() > waterH + 1f)
+                {
+                    xPlayerStart = x;
+                    yPlayerStart = y;
+                    Debug.Log("XYPLZ: " + x + " " + y);
+                    foundStart = true;
+                }
+            }
+            
+        }
+        SetPlayerPos(CoordToWorldPoint(xPlayerStart, yPlayerStart));
 
         Debug.Log("End Generate");
+    }
+
+    void SetPlayerPos(Vector3 pos)
+    {
+        Vector3 newPos = pos;
+        newPos.y = pos.y + 3;
+        GameObject player = GameObject.Find("Head");
+        if (player)
+        {
+            if (pos != null)
+            {
+                player.transform.position = newPos;
+                Debug.Log("Player Pos: " + newPos);
+            }
+        }
+    }
+
+    private void MovePlane(float h)
+    {
+        GameObject plane = GameObject.Find("Water");
+        Vector3 pos = CoordToWorldPoint(width / 2, height / 2);
+        pos.y = h;
+        
+        plane.transform.position = pos;
     }
 
     /// <summary>
@@ -179,18 +230,26 @@ public class IslandGenerator : MonoBehaviour
     /// </summary>
     /// <param name="defaultType"></param>
 	public void RandomHeightMap(TerrainType defaultType){
-		for (int x = 0; x < width; x++) {
+        if (useRandomSeed)
+        {
+            seed = Time.time.ToString();
+        }
+        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
+        for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
                 float xCoord = (float)(x);
 				float yCoord = (float)(y);
                 float h = Mathf.PerlinNoise(xCoord / perlinScale, yCoord / perlinScale);
-                if (x >= borderSize && x < width - borderSize && y >= borderSize && y < height - borderSize)
+                int tempBorder = borderSize + psuedoRandom.Next(borderSize / -2, borderSize / 2);
+                float distToPoint = Vector3.Distance(new Vector3(x, y, 0), new Vector3(width / 2, height / 2, 0));
+
+                if (width/2 - tempBorder > distToPoint )
                 {
                     h = h * hscale;
                 }
                 else
                 {
-                    h = h * ((Mathf.Min(height - y, y, width - x, x)/(float)borderSize) * hscale);
+                    h = h * (((float)width / 2f - distToPoint)/ borderSize) * hscale;
                 }
 				map[x, y] = new TerrainTile(defaultType, x, y, h);
 			}

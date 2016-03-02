@@ -8,7 +8,7 @@ public class Player : MonoBehaviour
     Vector3 velocity;
     Quaternion rotation;
     Vector3 target;
-    public int speed = 1;
+    public int speed = 1000;
     bool hasTarget = false;
 
     Vector3 zero = new Vector3(0, 0, 0);
