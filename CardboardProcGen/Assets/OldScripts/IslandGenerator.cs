@@ -80,7 +80,7 @@ public class IslandGenerator : MonoBehaviour
     void Update()
     {
         // Make a new Island every time middle mouse is pressed
-        if (Input.GetMouseButtonDown(0))
+        if (Input.GetMouseButtonDown(2))
         {
             GenerateIsland();
             //OnDrawGizmos();
@@ -205,7 +205,7 @@ public class IslandGenerator : MonoBehaviour
     {
         Vector3 newPos = pos;
         newPos.y = pos.y + 3;
-        GameObject player = GameObject.Find("Head");
+        GameObject player = GameObject.Find("CardboardMain");
         if (player)
         {
             if (pos != null)
