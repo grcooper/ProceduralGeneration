@@ -60,6 +60,8 @@ public class IslandGenerator : MonoBehaviour
     // chance for each type of terrain, must add up to 100%, the forest terrain will default fill the rest if under 100
 	public float[] typePercents;
 
+    public int roundNumber;
+
     TerrainTile[,] map;
 
     Vector3 startingPos;
@@ -89,7 +91,7 @@ public class IslandGenerator : MonoBehaviour
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
-        Vector3 pos = new Vector3(-width / 2 + (x * 32) + .5f, map[x, y].getHeight(), -height / 2 + (y * 32) + .5f);
+        Vector3 pos = new Vector3(-width / 2 + (x * 16) + .5f, map[x, y].getHeight(), -height / 2 + (y * 16) + .5f);
         return pos;
     }
 
@@ -114,7 +116,7 @@ public class IslandGenerator : MonoBehaviour
 		RandomHeightMap(baseTerrainType);
 		Debug.Log("End Random Heightmap");
 
-        waterH = ((float)psuedoRandom.Next(0, (int)hscale) * 0.2f) + 0.1f;
+        waterH = ((float)psuedoRandom.Next(0, (int)hscale) * 0.1f);
         MovePlane(waterH);
 
         Debug.Log ("Random Fill");
@@ -166,17 +168,18 @@ public class IslandGenerator : MonoBehaviour
                         }
                     }
                 }
-
+                /*
                 if(map[x,y].getType() == TerrainType.Stone)
                 {
-                    float newHScale = (((float)psuedoRandom.Next(90, 120))/100f);
+                    float newHScale = (((float)psuedoRandom.Next(100, 100))/100f);
 
                     map[x, y].setHeight(map[x, y].getHeight() * newHScale);
                 }
                 else
                 {
-                    map[x, y].setHeight(map[x, y].getHeight() * 0.7f);
-                }
+                    map[x, y].setHeight(map[x, y].getHeight() * 1f);
+                }*/
+                map[x, y].setHeight(Mathf.Round(map[x, y].getHeight() / roundNumber) * roundNumber);
             }
         }
 
@@ -240,10 +243,10 @@ public class IslandGenerator : MonoBehaviour
                 float xCoord = (float)(x);
 				float yCoord = (float)(y);
                 float h = Mathf.PerlinNoise(xCoord / perlinScale, yCoord / perlinScale);
-                int tempBorder = borderSize + psuedoRandom.Next(borderSize / -2, borderSize / 2);
+                //int tempBorder = borderSize + psuedoRandom.Next(borderSize / -2, borderSize / 2);
                 float distToPoint = Vector3.Distance(new Vector3(x, y, 0), new Vector3(width / 2, height / 2, 0));
 
-                if (width/2 - tempBorder > distToPoint )
+                if (width/2 - borderSize > distToPoint )
                 {
                     h = h * hscale;
                 }

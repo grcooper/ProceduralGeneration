@@ -113,6 +113,8 @@
     <None Include="Assets\Shaders\UnityVC\StandardSpecularVC.shader" />
     <None Include="Assets\Shaders\UnityVC\StandardVC.shader" />
     <None Include="Assets\Shaders\UnityVC\UnityVC.cginc" />
+    <None Include="Assets\Water Flow Free\!Readme.txt" />
+    <None Include="Assets\Water Flow Free\Shaders\Water Simple.shader" />
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath)\SyntaxTree\UnityVS\2015\UnityVS.CSharp.targets" />
 </Project>

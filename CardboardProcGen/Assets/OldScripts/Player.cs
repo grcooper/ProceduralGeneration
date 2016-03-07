@@ -33,8 +33,11 @@ public class Player : MonoBehaviour
             GameObject myHead = GameObject.Find("Head");
             Vector3 forwardMovement = new Vector3(myHead.transform.forward.x, 0, myHead.transform.forward.z);
             transform.localPosition += forwardMovement * speed * Time.deltaTime;
+            GameObject land = GameObject.Find("LandMesh");
+            Debug.Log(land.transform.position);
+            Debug.Log(land.GetComponent<MeshRenderer>());
+            Debug.Log(land.GetComponent<MeshFilter>().transform);
         }
-
     }
 
 
