@@ -6,9 +6,15 @@ public class IslandGenerator : MonoBehaviour
 {
     public MeshFilter landMF;
 
+	/** Enum to determine the differnt types or terrain - can add more later */
     public enum TerrainType { None, Beach, Forest, Stone };
+	/** The default terrain type - beach seemed correct as we are on an island */
     public static TerrainType baseTerrainType = TerrainType.Beach;
 
+	/** 
+	 * Main tile structure, each tile is one unit. 
+	 * Technically these are points and not tiles
+	 */
     public class TerrainTile
     {
         private TerrainType m_terrainType;
@@ -26,7 +32,7 @@ public class IslandGenerator : MonoBehaviour
             m_height = h;
             m_baseType = baseTerrainType;
         }
-
+		/** Getters and setters for the tiles*/
         public TerrainType getType() { return m_terrainType; }
         public void setType( TerrainType type ) { m_terrainType = type;  }
         public void setTypeAndBase(TerrainType type) { m_baseType = m_terrainType;  m_terrainType = type; } // May need to implement as basestack later
@@ -43,8 +49,9 @@ public class IslandGenerator : MonoBehaviour
     public int width;
     public int height;
 	
-
+	// Scale for our perlin noise - basically selecting a section of a perlin map
 	public float perlinScale = 5f;
+	// How high to scale our points
 	public float hscale;
 
     // Seed for generations
@@ -60,10 +67,13 @@ public class IslandGenerator : MonoBehaviour
     // chance for each type of terrain, must add up to 100%, the forest terrain will default fill the rest if under 100
 	public float[] typePercents;
 
+	// Number we round the plataues to - this could be named better TODO
     public int roundNumber;
 
+	// Our terrain tile map
     TerrainTile[,] map;
 
+	// Determine a starting position for the player
     Vector3 startingPos;
 
     private float waterH;
@@ -75,22 +85,23 @@ public class IslandGenerator : MonoBehaviour
     // Use this for initialization
     void Start()
     {
+		// Create the island on start
         GenerateIsland();
     }
 
     // Update is called once per frame
     void Update()
     {
-        // Make a new Island every time middle mouse is pressed
+        // Make a new Island every time middle mouse is pressed for testing
         if (Input.GetMouseButtonDown(2))
         {
             GenerateIsland();
-            //OnDrawGizmos();
         }
     }
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
+		// Converting the tiles x,y coords to points in the game - the multiplication values should be made changeable TODO
         Vector3 pos = new Vector3(-width / 2 + (x * 16) + .5f, map[x, y].getHeight(), -height / 2 + (y * 16) + .5f);
         return pos;
     }
@@ -109,22 +120,25 @@ public class IslandGenerator : MonoBehaviour
 
         
 
-        Debug.Log("Start Generate");
+        Debug.Log("-- Start Generate --");
         map = new TerrainTile[width, height];
 
-		Debug.Log ("Random Heightmap");
+		Debug.Log ("-- Random Heightmap --");
 		RandomHeightMap(baseTerrainType);
-		Debug.Log("End Random Heightmap");
+		Debug.Log("-- End Random Heightmap --");
 
+		// Adjust the water plane to a random water level
         waterH = ((float)psuedoRandom.Next(0, (int)hscale) * 0.1f);
         MovePlane(waterH);
 
-        Debug.Log ("Random Fill");
+		// TODO put this in a loop - iterate through enum!
+
+        Debug.Log ("-- Random Fill --");
 		RandomFillMap(TerrainType.Forest);
-		Debug.Log ("End Random Fill");
+		Debug.Log ("-- End Random Fill --");
 
 
-		Debug.Log ("Start Smooth");
+		Debug.Log ("-- Start Smooth --");
 
         for (int i = 0; i < smoothIterations; i++)
         {
@@ -145,7 +159,7 @@ public class IslandGenerator : MonoBehaviour
         }
         Debug.Log("End Smooth");
 
-        // Post processing beach and stone height sharpening
+        // Post processing beach and stone height sharpening/flattening
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -153,10 +167,7 @@ public class IslandGenerator : MonoBehaviour
                 float distToPoint = Vector3.Distance(new Vector3(x,y,0), new Vector3(width/2,height/2,0));
                 float distToCorner = Vector3.Distance(new Vector3(width/2,height/2,0), new Vector3(0,0,0));
 
-                if (width/2 > distToPoint + borderSize)
-                {
-                }
-                else
+				if (!(width/2 > distToPoint + borderSize))
                 {
                     if (map[x, y].getType() == TerrainType.Forest)
                     {
@@ -182,8 +193,11 @@ public class IslandGenerator : MonoBehaviour
                 map[x, y].setHeight(Mathf.Round(map[x, y].getHeight() / roundNumber) * roundNumber);
             }
         }
-
+		Debug.Log ("-- Start Generating Mesh --");
         GenerateMesh();
+		Debug.Log ("-- End Generating Mesh --");
+
+		Debug.Log ("-- Start Find Player Position --");
         bool foundStart = false;
         for(int x = 0; x < width && !foundStart; x++)
         {
@@ -200,13 +214,16 @@ public class IslandGenerator : MonoBehaviour
             
         }
         SetPlayerPos(CoordToWorldPoint(xPlayerStart, yPlayerStart));
+		Debug.Log ("-- End Find Player Position --");
 
         Debug.Log("End Generate");
     }
 
+	// Uses the cardboard as the player, and transforms them to the new position
     void SetPlayerPos(Vector3 pos)
     {
         Vector3 newPos = pos;
+		// Add three to the position to account for the size of the player, this shouldn't be a constant TODO
         newPos.y = pos.y + 3;
         GameObject player = GameObject.Find("CardboardMain");
         if (player)
@@ -219,6 +236,7 @@ public class IslandGenerator : MonoBehaviour
         }
     }
 
+	// Moves the Water plane to a more appropriate height
     private void MovePlane(float h)
     {
         GameObject plane = GameObject.Find("Water");
@@ -228,10 +246,8 @@ public class IslandGenerator : MonoBehaviour
         plane.transform.position = pos;
     }
 
-    /// <summary>
-    /// Sets the map's height values according to perlin noise generation in Unity
-    /// </summary>
-    /// <param name="defaultType"></param>
+
+    // Sets the map's height values according to perlin noise generation in Unity
 	public void RandomHeightMap(TerrainType defaultType){
         if (useRandomSeed)
         {
@@ -258,11 +274,8 @@ public class IslandGenerator : MonoBehaviour
 			}
 		}
 	}
-
-    /// <summary>
-    /// Randomly assigns values to be the toFill type based on global percentage of type
-    /// </summary>
-    /// <param name="toFill"></param>
+		
+    // Randomly assigns values to be the toFill type based on global percentage of type
 	public void RandomFillMap(TerrainType toFill)
     {
         if (useRandomSeed)
@@ -283,11 +296,8 @@ public class IslandGenerator : MonoBehaviour
             }
         }
     }
-
-    /// <summary>
-    /// Smooths the map based on 
-    /// </summary>
-    /// <param name="toSmooth"></param>
+		
+    // Smooths the map based on toSmooth - looks for surrounding points and if there is a majority - change this tile
     void SmoothMap(TerrainType toSmooth)
     {
 		for (int x = 0; x < width; x++)
@@ -314,6 +324,7 @@ public class IslandGenerator : MonoBehaviour
 		}
     }
 
+	// Returns the number of terrain types around the posX/posY that have the same terrain as type
     int GetSameTerrainNeighbours(TerrainType type, int posX, int posY)
     {
         int count = 0;
@@ -337,12 +348,14 @@ public class IslandGenerator : MonoBehaviour
         return count;
     }
 
+	// Generate the mesh for the island - Should go into its own class eventually?
     void GenerateMesh()
     {
         List<Vector3> vertices = new List<Vector3>();
         List<int> triangles = new List<int>();
         List < Color > colors = new List<Color>();
 
+		// Set up the colors for the different terrain types
         const int NUMSANDCOLORS = 4;
         List<Color> sandColors = new List<Color>();
         sandColors.Add(new Color(194f/255f, 178f/255f, 128f/255f));
@@ -364,7 +377,6 @@ public class IslandGenerator : MonoBehaviour
         stoneColors.Add(new Color(100f/255f, 100f/255f, 100f/255f));
         stoneColors.Add(new Color(70f/255f, 70f/255f, 70f/255f));
 
-
         if (useRandomSeed)
         {
             seed = Time.time.ToString();
@@ -372,6 +384,7 @@ public class IslandGenerator : MonoBehaviour
 
         System.Random psuedoRandom = new System.Random(seed.GetHashCode());
 
+		// Create the initial vertices and set their colors
         int index = 0;
         for(int x = 0; x < width; x++)
         {
@@ -398,6 +411,7 @@ public class IslandGenerator : MonoBehaviour
             }
         }
 
+		// Create the triangle arrays for the mesh
         for(int x = 0; x < width; x++)
         {
             for(int y = 0; y < height; y++)
@@ -418,6 +432,7 @@ public class IslandGenerator : MonoBehaviour
             }
         }
 
+		// Unity shaders mean that we have to make individual triangles to get their color full
         Vector3[] verticesModified = new Vector3[triangles.Count];
         int[] trianglesModified = new int[triangles.Count];
         Color[] colorsModified = new Color[triangles.Count];
@@ -437,16 +452,19 @@ public class IslandGenerator : MonoBehaviour
 
         Mesh mesh = new Mesh();
 
+		// Add all of our arrays to our mesh
         mesh.vertices = verticesModified;
         mesh.triangles = trianglesModified;
         mesh.colors = colorsModified;
         mesh.RecalculateNormals();
         landMF.mesh = mesh;
 
+		// Destroy the old land mesh - used when we regenerate!
         if ( landMF.gameObject.GetComponent<MeshCollider>() != null)
         {
             Destroy(landMF.gameObject.GetComponent<MeshCollider>());
         }
+		// Add a colider for our mesh
         MeshCollider wallCollider = landMF.gameObject.AddComponent<MeshCollider>();
         wallCollider.sharedMesh = mesh;
 
