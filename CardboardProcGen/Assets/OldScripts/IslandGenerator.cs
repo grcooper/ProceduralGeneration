@@ -47,6 +47,13 @@ public class IslandGenerator : MonoBehaviour
         public int getIndex() { return index;  }
         public void setIndex(int ind) { index = ind; }
 		public void addEnvironmentObject(GameObject go) { m_environmentObjects.Add (go); }
+		public void cleanupEnvironmentObjects()
+		{
+			foreach (GameObject go in m_environmentObjects)
+			{
+				Destroy (go);
+			}
+		}
     }
 
     // Height and width of the island
@@ -107,6 +114,14 @@ public class IslandGenerator : MonoBehaviour
         // Make a new Island every time middle mouse is pressed for testing
         if (Input.GetMouseButtonDown(2))
         {
+			// Clear out the evironment prefabs
+			for (int x = 0; x < width; x++)
+			{
+				for (int y = 0; y < height; y++)
+				{
+					map[x,y].cleanupEnvironmentObjects();
+				}
+			}
             GenerateIsland();
         }
     }
