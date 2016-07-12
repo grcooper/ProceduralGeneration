@@ -14,6 +14,7 @@ public class IslandGenerator : MonoBehaviour
 	/** 
 	 * Main tile structure, each tile is one unit. 
 	 * Technically these are points and not tiles
+	 * Should move to a new file TODO
 	 */
     public class TerrainTile
     {
@@ -23,6 +24,7 @@ public class IslandGenerator : MonoBehaviour
         private int index;
         private float m_height;
         private TerrainType m_baseType;
+		private List<GameObject> m_environmentObjects;
 
         public TerrainTile(TerrainType type, int x, int y, float h)
         {
@@ -31,6 +33,7 @@ public class IslandGenerator : MonoBehaviour
             m_y = y;
             m_height = h;
             m_baseType = baseTerrainType;
+			m_environmentObjects = new List<GameObject>();
         }
 		/** Getters and setters for the tiles*/
         public TerrainType getType() { return m_terrainType; }
@@ -43,11 +46,13 @@ public class IslandGenerator : MonoBehaviour
         public void setHeight( float h ) { m_height = h; }
         public int getIndex() { return index;  }
         public void setIndex(int ind) { index = ind; }
+		public void addEnvironmentObject(GameObject go) { m_environmentObjects.Add (go); }
     }
 
     // Height and width of the island
     public int width;
     public int height;
+	public int worldScale = 1;
 	
 	// Scale for our perlin noise - basically selecting a section of a perlin map
 	public float perlinScale = 5f;
@@ -69,6 +74,13 @@ public class IslandGenerator : MonoBehaviour
 
 	// Number we round the plataues to - this could be named better TODO
     public int roundNumber;
+
+	// Maximum size the prefabs can be
+	public int environmentScale = 1;
+
+	// Prefabs we are using for our environments
+	public GameObject[] treePrefabs;
+	public GameObject[] stonePrefabs;
 
 	// Our terrain tile map
     TerrainTile[,] map;
@@ -102,7 +114,7 @@ public class IslandGenerator : MonoBehaviour
     Vector3 CoordToWorldPoint(int x, int y)
     {
 		// Converting the tiles x,y coords to points in the game - the multiplication values should be made changeable TODO
-        Vector3 pos = new Vector3(-width / 2 + (x * 16) + .5f, map[x, y].getHeight(), -height / 2 + (y * 16) + .5f);
+        Vector3 pos = new Vector3(-width / 2 + (x * worldScale) + .5f, map[x, y].getHeight(), -height / 2 + (y * worldScale) + .5f);
         return pos;
     }
 
@@ -116,7 +128,7 @@ public class IslandGenerator : MonoBehaviour
         {
             seed = Time.time.ToString();
         }
-        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
+        psuedoRandom = new System.Random(seed.GetHashCode());
 
         
 
@@ -165,7 +177,13 @@ public class IslandGenerator : MonoBehaviour
             for (int y = 0; y < height; y++)
             {
                 float distToPoint = Vector3.Distance(new Vector3(x,y,0), new Vector3(width/2,height/2,0));
-                float distToCorner = Vector3.Distance(new Vector3(width/2,height/2,0), new Vector3(0,0,0));
+                //float distToCorner = Vector3.Distance(new Vector3(width/2,height/2,0), new Vector3(0,0,0));
+
+				// Set the type to be beach when below the water.
+				if (map [x, y].getHeight () <= waterH)
+				{
+					map [x, y].setTypeAndBase (TerrainType.Beach);
+				}
 
 				if (!(width/2 > distToPoint + borderSize))
                 {
@@ -196,6 +214,11 @@ public class IslandGenerator : MonoBehaviour
 		Debug.Log ("-- Start Generating Mesh --");
         GenerateMesh();
 		Debug.Log ("-- End Generating Mesh --");
+
+		Debug.Log ("-- Start Generate environment prefabs --");
+		GenerateEnvironment ();
+		Debug.Log ("-- End Generate environment prefabs --");
+
 
 		Debug.Log ("-- Start Find Player Position --");
         bool foundStart = false;
@@ -228,11 +251,8 @@ public class IslandGenerator : MonoBehaviour
         GameObject player = GameObject.Find("CardboardMain");
         if (player)
         {
-            if (pos != null)
-            {
-                player.transform.position = newPos;
-                Debug.Log("Player Pos: " + newPos);
-            }
+            player.transform.position = newPos;
+            Debug.Log("Player Pos: " + newPos);
         }
     }
 
@@ -249,11 +269,11 @@ public class IslandGenerator : MonoBehaviour
 
     // Sets the map's height values according to perlin noise generation in Unity
 	public void RandomHeightMap(TerrainType defaultType){
-        if (useRandomSeed)
+        /*if (useRandomSeed)
         {
             seed = Time.time.ToString();
         }
-        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
+        System.Random psuedoRandom = new System.Random(seed.GetHashCode()); */
         for (int x = 0; x < width; x++) {
 			for (int y = 0; y < height; y++) {
                 float xCoord = (float)(x);
@@ -278,12 +298,6 @@ public class IslandGenerator : MonoBehaviour
     // Randomly assigns values to be the toFill type based on global percentage of type
 	public void RandomFillMap(TerrainType toFill)
     {
-        if (useRandomSeed)
-        {
-            seed = Time.time.ToString();
-        }
-
-        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
         for (int x = 0; x < width; x++)
         {
 			for (int y = 0; y < height; y++){
@@ -377,13 +391,6 @@ public class IslandGenerator : MonoBehaviour
         stoneColors.Add(new Color(100f/255f, 100f/255f, 100f/255f));
         stoneColors.Add(new Color(70f/255f, 70f/255f, 70f/255f));
 
-        if (useRandomSeed)
-        {
-            seed = Time.time.ToString();
-        }
-
-        System.Random psuedoRandom = new System.Random(seed.GetHashCode());
-
 		// Create the initial vertices and set their colors
         int index = 0;
         for(int x = 0; x < width; x++)
@@ -469,4 +476,48 @@ public class IslandGenerator : MonoBehaviour
         wallCollider.sharedMesh = mesh;
 
     }
+
+	// Using map coords x and y, place trees in this tile randomly
+	void PlaceTrees (int x, int y)
+	{
+		if (treePrefabs.Length > 0)
+		{
+			GameObject tree = Instantiate(treePrefabs[psuedoRandom.Next(0, treePrefabs.Length)], CoordToWorldPoint(x, y), Quaternion.Euler(0, 0, 0)) as GameObject;
+			tree.transform.localScale = new Vector3(psuedoRandom.Next(1, environmentScale), psuedoRandom.Next(1, environmentScale), psuedoRandom.Next(1, environmentScale));
+			map [x, y].addEnvironmentObject(tree);
+		}
+	}
+
+	void PlaceStones(int x, int y)
+	{
+		if (stonePrefabs.Length > 0)
+		{
+			Debug.Log ("-- RAND: " + psuedoRandom.Next(1,15));
+			GameObject stone = Instantiate(stonePrefabs[psuedoRandom.Next(0, stonePrefabs.Length - 1)], CoordToWorldPoint(x, y), Quaternion.Euler(0, 0, 0)) as GameObject;
+			stone.transform.localScale = new Vector3(psuedoRandom.Next(1, environmentScale), psuedoRandom.Next(1, environmentScale), psuedoRandom.Next(1, environmentScale));
+			map [x, y].addEnvironmentObject(stone);
+		}
+	}
+
+	void GenerateEnvironment()
+	{
+		for (int x = 0; x < width; x++) 
+		{
+			for (int y = 0; y < height; y++) 
+			{
+				switch (map[x, y].getType())
+				{
+				case TerrainType.Beach:
+					// No terrain items right now
+					break;
+				case TerrainType.Forest:
+					PlaceTrees (x, y);
+					break;
+				case TerrainType.Stone:
+					PlaceStones (x, y);
+					break;
+				}
+			}
+		}
+	}
 }

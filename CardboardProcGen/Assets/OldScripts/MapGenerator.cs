@@ -50,10 +50,7 @@ public class MapGenerator : MonoBehaviour
         GameObject player = GameObject.Find("Head");
         if (player)
         {
-            if (pos != null)
-            {
-                player.transform.position = newPos;
-            }
+        	player.transform.position = newPos;
         }
     }
 

@@ -4,7 +4,7 @@ using System.Collections;
 public class Player : MonoBehaviour
 {
 
-    Rigidbody rigidbody;
+    Rigidbody myRigidbody;
     Vector3 velocity;
     Quaternion rotation;
     Vector3 target;
@@ -15,8 +15,8 @@ public class Player : MonoBehaviour
 
     void Start()
     {
-        rigidbody = GetComponent<Rigidbody>();
-        rotation = rigidbody.rotation;
+        myRigidbody = GetComponent<Rigidbody>();
+        rotation = myRigidbody.rotation;
         OnEnabled();
     }
 
@@ -53,7 +53,7 @@ public class Player : MonoBehaviour
         if( !hasTarget )
         {
             target = cursor.transform.position.normalized;
-            target.y = rigidbody.position.y;
+            target.y = myRigidbody.position.y;
             hasTarget = true;
             Debug.Log(target);
         }
