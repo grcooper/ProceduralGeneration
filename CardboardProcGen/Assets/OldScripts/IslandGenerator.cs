@@ -4,6 +4,7 @@ using System.Collections.Generic;
 
 public class IslandGenerator : MonoBehaviour
 {
+
     public MeshFilter landMF;
 
 	/** Enum to determine the differnt types or terrain - can add more later */
@@ -99,6 +100,9 @@ public class IslandGenerator : MonoBehaviour
     private int xPlayerStart;
     private int yPlayerStart;
 
+	// Have we generated the island once already - used for cleanup when we generate again
+	private bool firstGenerate = true;
+
     private System.Random psuedoRandom;
 
     // Use this for initialization
@@ -114,14 +118,7 @@ public class IslandGenerator : MonoBehaviour
         // Make a new Island every time middle mouse is pressed for testing
         if (Input.GetMouseButtonDown(2))
         {
-			// Clear out the evironment prefabs
-			for (int x = 0; x < width; x++)
-			{
-				for (int y = 0; y < height; y++)
-				{
-					map[x,y].cleanupEnvironmentObjects();
-				}
-			}
+			
             GenerateIsland();
         }
     }
@@ -134,7 +131,20 @@ public class IslandGenerator : MonoBehaviour
     }
 
     public void GenerateIsland()
-    {
+	{
+		if (!firstGenerate)
+		{
+			// Clear out the evironment prefabs
+			for (int x = 0; x < width; x++)
+			{
+				for (int y = 0; y < height; y++)
+				{
+					map [x, y].cleanupEnvironmentObjects ();
+				}
+			}
+		}
+		firstGenerate = false;
+
         // Scales the perlin noise
         // No divisioon by 0 / negative values
 		perlinScale = Mathf.Max (perlinScale, 0.0001f);
@@ -187,6 +197,7 @@ public class IslandGenerator : MonoBehaviour
         Debug.Log("End Smooth");
 
         // Post processing beach and stone height sharpening/flattening
+		// TODO Put this into a function!
         for (int x = 0; x < width; x++)
         {
             for (int y = 0; y < height; y++)
@@ -226,6 +237,7 @@ public class IslandGenerator : MonoBehaviour
                 map[x, y].setHeight(Mathf.Round(map[x, y].getHeight() / roundNumber) * roundNumber);
             }
         }
+
 		Debug.Log ("-- Start Generating Mesh --");
         GenerateMesh();
 		Debug.Log ("-- End Generating Mesh --");

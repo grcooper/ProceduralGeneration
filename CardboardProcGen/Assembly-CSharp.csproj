@@ -64,6 +64,7 @@
      <Compile Include="Assets\Cardboard\Scripts\VRDevices\UnityEditorDevice.cs" />
      <Compile Include="Assets\Fantasy Skybox FREE\Scripts\FSPlayer.cs" />
      <Compile Include="Assets\OldScripts\CameraFollow.cs" />
+     <Compile Include="Assets\OldScripts\Inventory.cs" />
      <Compile Include="Assets\OldScripts\IslandGenerator.cs" />
      <Compile Include="Assets\OldScripts\IslandMeshGenerator.cs" />
      <Compile Include="Assets\OldScripts\MapGenerator.cs" />
