@@ -27,6 +27,11 @@ public class Player : MonoBehaviour
         rotation = myRigidbody.rotation;
         OnEnabled();
 		currentHealth = startingHealth;
+		GameObject gen = GameObject.Find("IslandGenerator");
+		if (gen)
+		{
+			generator = gen.GetComponent<IslandGenerator>();
+		}
     }
 
     void Update()

@@ -12,6 +12,9 @@ public class IslandGenerator : MonoBehaviour
 	/** The default terrain type - beach seemed correct as we are on an island */
     public static TerrainType baseTerrainType = TerrainType.Beach;
 
+	/** The distance at which to render objects */
+	public float renderDistance = 100;
+
 	/** 
 	 * Main tile structure, each tile is one unit. 
 	 * Technically these are points and not tiles
@@ -53,6 +56,13 @@ public class IslandGenerator : MonoBehaviour
 			foreach (GameObject go in m_environmentObjects)
 			{
 				Destroy (go);
+			}
+		}
+		public void SetActive(bool shouldBeActive)
+		{
+			foreach (GameObject go in m_environmentObjects)
+			{
+				go.SetActive (shouldBeActive);
 			}
 		}
     }
@@ -100,6 +110,11 @@ public class IslandGenerator : MonoBehaviour
     private int xPlayerStart;
     private int yPlayerStart;
 
+	// Keep track of the last place the player was
+	private Vector3 playerLastPos;
+	// How far we have to move to change the render
+	public float playerMoveRenderDist = 10f;
+
 	// Have we generated the island once already - used for cleanup when we generate again
 	private bool firstGenerate = true;
 
@@ -121,7 +136,15 @@ public class IslandGenerator : MonoBehaviour
 			
             GenerateIsland();
         }
-    }
+		GameObject player = GameObject.Find("CardboardMain");
+		if (player)
+		{
+			if (Vector3.Distance (player.transform.position, playerLastPos) > playerMoveRenderDist)
+			{
+				SetActiveFromPlayerPosition ();
+			}
+		}
+	}
 
     Vector3 CoordToWorldPoint(int x, int y)
     {
@@ -129,6 +152,30 @@ public class IslandGenerator : MonoBehaviour
         Vector3 pos = new Vector3(-width / 2 + (x * worldScale) + .5f, map[x, y].getHeight(), -height / 2 + (y * worldScale) + .5f);
         return pos;
     }
+
+	public void SetActiveFromPlayerPosition()
+	{
+		GameObject player = GameObject.Find("CardboardMain");
+		if (player)
+		{
+			for (int x = 0; x < width; x++)
+			{
+				for (int y = 0; y < height; y++)
+				{			
+					if (Vector3.Distance (player.transform.position, CoordToWorldPoint (x, y)) > renderDistance)
+					{
+						map [x, y].SetActive (false);
+					} 
+					else
+					{
+						map [x, y].SetActive (true);
+					}
+				}
+			}
+		}
+	}
+
+
 
     public void GenerateIsland()
 	{
